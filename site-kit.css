@@ -1,0 +1,348 @@
+/*
+ * AIOS site-kit — shared, deterministic interaction patterns (star ratings,
+ * count-up numbers, scroll reveals, hero name write-in). Identical bytes on
+ * every generated site, same as the brand fonts — never written by the
+ * model itself, so the bugs found and fixed during the 2026-08-26 Lund
+ * design pass (a fractional star's fill layer needing its own `position:
+ * absolute` box, the name-write gradient needing its padding on the text
+ * element itself rather than its wrapper) can never regress per company.
+ *
+ * Colors come from each site's own palette via var(--accent)/
+ * var(--ink-faint) with sane fallbacks — nothing in here is Lund-specific.
+ */
+
+.star-empty path { fill: none; stroke: var(--ink-faint, #999); stroke-width: 1.5; }
+.star-fill path { fill: var(--accent, #333); }
+
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.reveal.is-visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+}
+
+/*
+ * .name-pin REQUIRES the page's own header to be `position: fixed`, never
+ * `position: sticky` or static. A sticky/static header occupies space in
+ * normal flow, pushing .name-pin-inner's starting position down by the
+ * header's own height — .name-pin-inner's sticky positioning then can't
+ * engage until the page has scrolled past THAT offset too, which shows up
+ * as a dead zone (the page visibly scrolls for the header's height before
+ * the fill/pin visibly does anything). A fixed header sits outside normal
+ * flow entirely (typically transparent, going solid via the .is-scrolled
+ * class this file toggles automatically — see wireHeaderScrollState()
+ * below), so .name-pin-inner starts at y=0 and the fill begins on the very
+ * first scroll pixel. Found and fixed 2026-08-26.
+ */
+.name-pin {
+  position: relative;
+  height: calc(100svh + 480px); /* the extra 480px is the scroll budget the name-write fill consumes while pinned — keep in sync with the 480 in site-kit.js */
+}
+@media (prefers-reduced-motion: reduce) { .name-pin { height: 100svh; } }
+
+.name-pin-inner {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (prefers-reduced-motion: reduce) { .name-pin-inner { position: static; } }
+
+.name-write {
+  display: block;
+  text-align: center;
+  /* Padding lives on THIS element, not .name-pin/.name-pin-inner —
+     background-clip:text paints relative to its own box, so a script/
+     display font's swashes and ascenders need their safety margin here or
+     they render outside the gradient's paint area and never pick up color. */
+  padding: 0.4em 0.6em 0.1em;
+  background-image: linear-gradient(
+    90deg,
+    var(--accent, #333) 0%,
+    var(--accent, #333) var(--fill, 0%),
+    var(--ink-faint, #999) var(--fill, 0%),
+    var(--ink-faint, #999) 100%
+  );
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--ink-faint, #999); /* fallback if background-clip:text isn't supported */
+  -webkit-text-fill-color: transparent;
+}
+
+/* Image variant of the write-in effect — for when a company has a real
+   logo (see websiteAgent.ts's logoBlock()) and it should be the thing that
+   "gets color" while scrolling, instead of plain text. Same base+color
+   two-layer clip-path technique as the star ratings, not background-clip
+   (which only works on text glyphs, not a raster image). Both <img> tags
+   reference the SAME logo file — the desaturation is a live CSS filter,
+   not a second pre-rendered asset. */
+.name-write-img { position: relative; display: inline-block; max-width: min(58vw, 420px); }
+.name-write-img img { display: block; width: 100%; height: auto; }
+.name-write-img .base { filter: grayscale(1) brightness(0.65); opacity: 0.75; }
+.name-write-img .color {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain;
+  clip-path: inset(0 100% 0 0);
+}
+
+/* ============================================================
+ * Booking calendar + third-party widget handoff mockup — added
+ * 2026-08-26. Shows a week of example time slots in the site's OWN
+ * design, then hands off to a small modal styled to look like a generic
+ * booking platform (deliberately NOT using --accent/--ink-faint — the
+ * whole point is that this step visibly belongs to a different system).
+ * Illustrative only: slot data is written directly in each site's own
+ * HTML (see websiteAgent.ts's siteKitBlock()), nothing here ever creates
+ * a real booking or contacts a real service.
+ * ============================================================ */
+
+.booking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: clamp(1rem, 2.5vw, 2rem); }
+.booking-day-label { text-align: center; margin-bottom: 1.1rem; }
+.booking-day-label .d { font-weight: 600; font-size: 0.95rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.booking-day-label .date { display: block; font-size: 0.76rem; opacity: 0.6; margin-top: 0.2rem; }
+.booking-slots { display: flex; flex-direction: column; gap: 0.65rem; }
+.slot-btn {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border: 1px solid var(--ink-faint, #999);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.slot-btn:hover:not(:disabled) { border-color: var(--accent, #333); box-shadow: 0 4px 14px -6px var(--accent, #333); transform: translateY(-1px); }
+.slot-btn:disabled { opacity: 0.4; text-decoration: line-through; cursor: default; }
+.slot-btn.is-selected { background: var(--accent, #333); border-color: var(--accent, #333); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .slot-btn:hover:not(:disabled) { transform: none; } }
+
+/* ============================================================
+ * Rolling booking calendar (2026-09-09) — the container/grid/nav chrome
+ * around the .slot-btn buttons above. Deliberately restrained: generous
+ * air, one quiet accent, soft motion — a calendar should read as a
+ * considered part of the site, never a bolted-on widget. Uses each site's
+ * own --accent/--ink/--ink-faint/--border/--paper-raised (with sane
+ * fallbacks) so it always matches that company's palette, never a fixed
+ * "booking widget" look.
+ * ============================================================ */
+.booking-cal-controls { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; }
+.booking-cal-controls select {
+  font-family: inherit; font-size: 0.85rem; padding: 0.55rem 0.9rem; border-radius: 999px;
+  border: 1px solid var(--border, rgba(0,0,0,0.14)); background: var(--paper-raised, #fff); color: var(--ink, inherit);
+  cursor: pointer; max-width: 100%;
+}
+.booking-cal-next-available { text-align: center; margin-top: 1.25rem; font-size: 0.86rem; color: var(--ink-faint, #888); }
+.booking-cal-next-available .chip-link-btn { background: none; border: none; padding: 0; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--accent, #333); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.booking-cal-head { display: flex; align-items: center; justify-content: center; gap: 1.25rem; margin-bottom: 1.75rem; }
+.booking-cal-range { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint, #888); min-width: 11ch; text-align: center; }
+.booking-cal-nav {
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border, rgba(0,0,0,0.12));
+  background: transparent; color: var(--ink, inherit); font-size: 1.05rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.booking-cal-nav:hover { border-color: var(--accent, #333); color: var(--accent, #333); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #333) 12%, transparent); }
+
+.booking-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.85rem; transition: opacity 0.25s ease; }
+.booking-cal-grid.is-loading { opacity: 0.45; }
+.booking-cal-day {
+  background: var(--paper-raised, rgba(0,0,0,0.02)); border: 1px solid var(--border, rgba(0,0,0,0.08));
+  border-radius: 14px; padding: 1rem 0.6rem; display: flex; flex-direction: column; gap: 0.6rem;
+  transition: border-color 0.25s ease;
+}
+.booking-cal-day.is-today { border-color: var(--accent, #333); }
+.booking-cal-day-head { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border, rgba(0,0,0,0.08)); }
+.booking-cal-day-head .wd { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint, #888); }
+.booking-cal-day-head .dt { font-family: var(--font-head, inherit); font-size: 1.2rem; }
+.booking-cal-day.is-today .booking-cal-day-head .dt { color: var(--accent, #333); }
+.booking-cal-slots { display: flex; flex-direction: column; gap: 0.45rem; }
+.booking-cal-slots .slot-btn { padding: 0.5rem 0.35rem; font-size: 0.82rem; }
+.booking-cal-closed { display: block; text-align: center; font-size: 0.78rem; color: var(--ink-faint, #999); padding: 0.6rem 0; font-style: italic; }
+
+@media (max-width: 860px) {
+  .booking-cal-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+}
+
+.bd-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(15, 20, 18, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.bd-backdrop.is-open { opacity: 1; pointer-events: auto; }
+.bd-modal {
+  width: 100%; max-width: 380px;
+  background: #ffffff;
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  transform: translateY(14px) scale(0.98);
+  transition: transform 0.25s ease;
+}
+.bd-backdrop.is-open .bd-modal { transform: translateY(0) scale(1); }
+.bd-header {
+  background: var(--accent, #0f4c3d); color: #fff;
+  padding: 1rem 1.25rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.bd-brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+.bd-brand .dot { width: 9px; height: 9px; border-radius: 50%; background: #4fd8a8; }
+.bd-close { background: none; border: 0; color: rgba(255, 255, 255, 0.8); font-size: 1.2rem; cursor: pointer; line-height: 1; padding: 0.25rem; }
+.bd-close:hover { color: #fff; }
+.bd-body { padding: 1.25rem 1.25rem 1.5rem; }
+.bd-disclaimer {
+  font-size: 0.68rem; color: #8a8f8d; background: #f2f4f3;
+  border-radius: 6px; padding: 0.45rem 0.6rem; margin-bottom: 1rem;
+  line-height: 1.4;
+}
+.bd-slot-summary { font-size: 0.95rem; color: #16211c; margin-bottom: 1rem; }
+.bd-slot-summary strong { display: block; font-size: 1.05rem; margin-bottom: 0.15rem; }
+.bd-field { margin-bottom: 0.85rem; }
+.bd-field label { display: block; font-size: 0.76rem; color: #5b625f; margin-bottom: 0.3rem; }
+.bd-field input {
+  width: 100%; box-sizing: border-box;
+  border: 1px solid #d7dcda; border-radius: 8px;
+  padding: 0.6rem 0.7rem; font-size: 0.92rem; font-family: inherit; color: #16211c;
+}
+.bd-field input:focus { outline: none; border-color: var(--accent, #0f4c3d); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #0f4c3d) 14%, transparent); }
+.bd-confirm-btn {
+  width: 100%; border: 0; border-radius: 8px;
+  background: var(--accent, #0f4c3d); color: #fff;
+  padding: 0.8rem; font-size: 0.95rem; font-weight: 600; font-family: inherit;
+  cursor: pointer; margin-top: 0.3rem;
+  transition: filter 0.2s ease;
+}
+.bd-confirm-btn:hover { filter: brightness(0.9); }
+.bd-success { display: none; text-align: center; padding: 0.5rem 0 0.25rem; }
+.bd-success .check {
+  width: 42px; height: 42px; border-radius: 50%; background: color-mix(in srgb, var(--accent, #0f4c3d) 14%, white); color: var(--accent, #0f4c3d);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem; font-size: 1.3rem;
+}
+.bd-success p { font-size: 0.92rem; color: #16211c; margin-bottom: 0.3rem; }
+.bd-success .fine { font-size: 0.76rem; color: #8a8f8d; }
+.bd-backdrop.is-done .bd-form { display: none; }
+.bd-backdrop.is-done .bd-success { display: block; }
+
+@media (max-width: 620px) {
+  .booking-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+  .booking-slots { flex-direction: row; flex-wrap: wrap; }
+  .slot-btn { flex: 1 1 30%; }
+}
+
+/* ============================================================
+ * Price list with an inline "Boka" button (2026-09-10) — replaces an
+ * always-visible week grid on the page itself. Deliberately restrained: a
+ * "från"-prefixed price in a quiet, faint tone with the actual amount as
+ * the visual focus (real in-salon pricing can vary by what the stylist
+ * actually does — the list shows a floor, not a fixed quote), one Boka
+ * button per row, nothing else competing for attention. Category grouping
+ * (h3 + count) is the site's own markup — these classes only style the
+ * per-service row itself.
+ * ============================================================ */
+.price-item {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,0.08));
+}
+.price-item:last-child { border-bottom: none; }
+.price-item-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+.price-item-name { font-family: var(--font-head, inherit); font-size: 1rem; }
+.price-item-duration { font-size: 0.78rem; color: var(--ink-faint, #888); }
+.price-item-price { flex: 0 0 auto; text-align: right; display: flex; flex-direction: column; gap: 0.1rem; }
+.price-item-from { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint, #999); }
+.price-item-amount { font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.price-item-book-btn {
+  flex: 0 0 auto;
+  font-family: inherit; font-size: 0.82rem; font-weight: 600;
+  padding: 0.55rem 1.15rem; border-radius: 999px;
+  border: 1px solid var(--accent, #333); background: transparent; color: var(--accent, #333);
+  cursor: pointer; white-space: nowrap;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.price-item-book-btn:hover { background: var(--accent, #333); color: #fff; box-shadow: 0 4px 14px -6px var(--accent, #333); }
+
+@media (max-width: 560px) {
+  .price-item { flex-wrap: wrap; }
+  .price-item-price { order: 2; text-align: left; }
+  .price-item-book-btn { order: 3; margin-left: auto; }
+}
+
+/* ============================================================
+ * Opening-hours list (2026-09-13) — same "always show a complete table,
+ * placeholder or real" principle as .price-item above: a full week list
+ * with an explicit .hours-placeholder marker beats a bare "contact us for
+ * hours" line, both for how the real site reads and for anything (like a
+ * scripted demo/tutorial walkthrough) that later reuses this exact markup.
+ * ============================================================ */
+.hours-list { list-style: none; margin: 1.5rem 0 0; padding: 0; max-width: 420px; border-top: 1px solid var(--border, rgba(0,0,0,0.08)); }
+.hours-list li { display: flex; align-items: baseline; justify-content: space-between; padding: 0.65rem 0.1rem; border-bottom: 1px solid var(--border, rgba(0,0,0,0.08)); font-size: 1rem; }
+.hours-list .hd-day { color: var(--ink-faint, #888); }
+.hours-list .hd-time { font-weight: 600; font-variant-numeric: tabular-nums; }
+.hours-list.hours-placeholder .hd-time { color: var(--ink-faint, #888); font-style: italic; font-weight: 500; }
+.hours-placeholder-note { font-size: 0.8rem; color: var(--ink-faint, #888); margin-top: 0.6rem; }
+
+/* ============================================================
+ * Per-service booking widget (2026-09-10) — reuses .booking-cal-head,
+ * -nav, -range, -grid, -day and .slot-btn from the rolling-calendar block
+ * above; this just adds the modal chrome and the two-step (staff -> times) layout.
+ * ============================================================ */
+.booking-widget-backdrop {
+  position: fixed; inset: 0; z-index: 210;
+  background: rgba(15, 20, 18, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.booking-widget-backdrop.is-open { opacity: 1; pointer-events: auto; }
+.booking-widget-modal {
+  position: relative;
+  width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto;
+  background: var(--paper, #fff); color: var(--ink, inherit);
+  border-radius: 16px; padding: 2rem 1.75rem 1.75rem;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  transform: translateY(14px) scale(0.98);
+  transition: transform 0.25s ease;
+}
+.booking-widget-backdrop.is-open .booking-widget-modal { transform: translateY(0) scale(1); }
+.booking-widget-close {
+  position: absolute; top: 0.9rem; right: 0.9rem;
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border, rgba(0,0,0,0.12));
+  background: transparent; color: var(--ink, inherit); font-size: 1.1rem; line-height: 1; cursor: pointer;
+}
+.booking-widget-service { text-align: center; margin-bottom: 1.5rem; padding-right: 2rem; }
+.booking-widget-service-name { display: block; font-family: var(--font-head, inherit); font-size: 1.3rem; }
+.booking-widget-service-meta { display: block; font-size: 0.82rem; color: var(--ink-faint, #888); margin-top: 0.25rem; }
+.booking-widget-label { display: block; font-size: 0.78rem; color: var(--ink-faint, #888); margin-bottom: 0.5rem; text-align: center; }
+.booking-widget-select {
+  display: block; width: 100%; box-sizing: border-box;
+  font-family: inherit; font-size: 0.92rem; padding: 0.7rem 0.9rem; border-radius: 10px;
+  border: 1px solid var(--border, rgba(0,0,0,0.14)); background: var(--paper-raised, #fff); color: var(--ink, inherit);
+  cursor: pointer; margin-bottom: 1.1rem;
+}
+.booking-widget-search-btn {
+  display: block; width: 100%;
+  font-family: inherit; font-size: 0.92rem; font-weight: 600;
+  padding: 0.8rem; border-radius: 10px; border: none;
+  background: var(--accent, #333); color: #fff; cursor: pointer;
+  transition: filter 0.2s ease;
+}
+.booking-widget-search-btn:hover:not(:disabled) { filter: brightness(0.92); }
+.booking-widget-search-btn:disabled { opacity: 0.7; cursor: default; }
+.booking-widget-back {
+  background: none; border: none; padding: 0; margin-bottom: 1rem;
+  font: inherit; font-size: 0.82rem; color: var(--ink-faint, #888); cursor: pointer;
+}
+.booking-widget-back:hover { color: var(--accent, #333); }
+
+@media (max-width: 620px) {
+  .booking-widget-modal .booking-cal-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+}
