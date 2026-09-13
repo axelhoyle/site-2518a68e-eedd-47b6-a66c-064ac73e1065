@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#2d5016"/>
+  <!-- arch shape suggesting the green arched door -->
+  <rect x="22" y="28" width="20" height="22" rx="2" fill="none" stroke="#e8dcc8" stroke-width="2.5"/>
+  <path d="M22 30 Q22 20 32 20 Q42 20 42 30" fill="none" stroke="#e8dcc8" stroke-width="2.5"/>
+  <!-- center line (door split) -->
+  <line x1="32" y1="20" x2="32" y2="50" stroke="#e8dcc8" stroke-width="1.5" opacity="0.6"/>
+  <!-- door handle dots -->
+  <circle cx="27" cy="39" r="1.5" fill="#d4a5a5"/>
+  <circle cx="37" cy="39" r="1.5" fill="#d4a5a5"/>
+</svg>
