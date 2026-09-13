@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="sv" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidan hittades inte – Malin Josteus Strand</title>
+  <meta name="description" content="Den här sidan finns inte. Hitta tillbaka till Malin Josteus Strand.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>
+    (function(){
+      try{
+        var t=localStorage.getItem('theme');
+        if(t) document.documentElement.setAttribute('data-theme',t);
+      }catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="site-kit.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .error-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: var(--paper);
+    }
+    .error-arch {
+      width: 90px;
+      height: 100px;
+      border: 3px solid var(--accent);
+      border-radius: 45px 45px 0 0;
+      margin: 0 auto 2rem;
+      position: relative;
+      opacity: 0.5;
+    }
+    .error-arch::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: -12px;
+      right: -12px;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 0;
+    }
+    .error-code {
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: clamp(5rem, 18vw, 10rem);
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .error-page h1 {
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      color: var(--ink);
+      margin-bottom: 1rem;
+      font-family: 'Fraunces', Georgia, serif;
+    }
+    .error-page p {
+      color: var(--ink-faint);
+      max-width: 380px;
+      margin: 0 auto 2rem;
+      line-height: 1.65;
+    }
+    .error-logo {
+      margin-bottom: 3rem;
+    }
+    .error-logo img {
+      max-height: 44px;
+      width: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-page">
+    <a href="index.html" class="error-logo">
+      <img src="logo.jpg" alt="Malin Josteus Strand">
+    </a>
+    <div class="error-arch" aria-hidden="true"></div>
+    <div class="error-code" aria-hidden="true">404</div>
+    <h1>Den här sidan finns inte</h1>
+    <p>Det verkar som att du hamnat lite fel. Inga bekymmer — klicka nedan så hittar du tillbaka till salongen.</p>
+    <a href="index.html" class="btn-primary">Tillbaka till startsidan</a>
+  </div>
+</body>
+</html>
